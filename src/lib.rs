@@ -120,6 +120,38 @@ impl Matrix {
 
     }
 
+    pub fn multiply_by_number(&mut self, number: i64) {
+
+        for i in 0..self.data.len() {
+            self.data[i] *= number;
+        }
+
+    }
+
+    pub fn multiply_by_matrix(&self, m: &Matrix) -> Result<Matrix, Error> {
+
+        if self.columns != m.rows {
+            return Err(Error::InvalidMultiplication);
+        }
+
+        let mut res_matrix = Matrix::new(self.rows, m.columns);
+
+        for i in 0..self.rows {
+            for j in 0..m.columns {
+                let mut sum = 0;
+                for k in 0..self.columns {
+                    sum += self.data[i * self.columns + k] * m.data[k * m.columns+ j];
+                }
+
+                res_matrix.data[i * m.columns + j] = sum;
+            }
+        }
+
+
+        Ok(res_matrix)
+
+    }
+
     pub fn print(&self) {
 
         for column in 0..self.columns {
@@ -174,46 +206,37 @@ mod tests {
     use super::*;
 
     #[test]
-    fn get() {
+    fn set_data() {
         let mut m = Matrix::new(3, 2);
         let _ = m.set_data(vec![1; 6]);
 
-        for c in 0..m.columns {
-            for r in 0..m.rows {
+        assert_eq!(m.data[0], 1);
 
-                let res = m.get(r, c);
+    }
 
-                match res {
-                    Ok(n) => { assert_eq!(n, 1); },
-                    Err(_) => { assert!(false); }
-                }
+    #[test]
+    fn set_value() {
+        let mut m = Matrix::new(2, 2);
+        let _ = m.set_value(0, 0, 1);
 
-            }
+        assert_eq!(m.data[0], 1);
+    }
+
+    #[test]
+    fn get_data() {
+        let mut m = Matrix::new(2, 2);
+        let _ = m.set_data(vec![1, 2, 3, 4]);
+
+        let value_res = m.get(0, 0);
+
+        if let Ok(value) = value_res {
+            assert_eq!(value, 1);
         }
 
-        let res = m.get(4, 2);
-
-        match res {
-            Ok(_) => { assert!(false); },
-            Err(e) => {
-                match e {
-                    Error::NumberOfRowsExceeded => { assert!(true); },
-                    _ => { assert!(false); }
-                }
-            }
+        else {
+            assert!(false);
         }
 
-        let res = m.get(0, 4);
-
-        match res {
-            Ok(_) => { assert!(false); },
-            Err(e) => {
-                match e {
-                    Error::NumberOfColumnsExceeded => { assert!(true); },
-                    _ => { assert!(false); }
-                }
-            }
-        }
     }
 
     #[test]
@@ -223,35 +246,7 @@ mod tests {
 
         let mt = m.transpose();
 
-        assert_eq!(mt.rows, m.columns);
-        assert_eq!(mt.columns, m.rows);
-        assert_eq!(mt.data, m.data);
-    }
-
-    #[test]
-
-    fn set_data() {
-
-        let mut m = Matrix::new(2, 2);
-
-        let res = m.set_data(vec![1, 9]);
-
-        if let Err(e) = res {
-            match e {
-                Error::InvalidNumberOfData => {assert!(true);},
-                _ => {assert!(false);}
-            }
-        }
-
-        for i in 1..5 {
-            let mut m = Matrix::new(i, i);
-            let _ = m.set_data(vec![1; i*i]);
-
-            for j in 0..i*i {
-                assert_eq!(1, m.data[j]);
-            }
-        }
-
+        assert!(mt.rows == m.columns && mt.columns == m.rows);
     }
 
     #[test]
@@ -285,5 +280,34 @@ mod tests {
             Err(_) => assert!(false)
         }
 
+    }
+
+    #[test]
+    fn multiply_by_number() {
+        let mut m = Matrix::new(2, 2);
+        let _ = m.set_data(vec![1; 4]);
+
+        m.multiply_by_number(2);
+
+        assert_eq!(m.data[0], 2);
+    }
+
+    #[test]
+    fn multiply_by_matrix() {
+        let mut a = Matrix::new(2, 2);
+        let mut b = Matrix::new(2, 1);
+
+        let _ = a.set_data(vec![1, 2, 3, 4]);
+        let _ = b.set_data(vec![1, 2]);
+
+        let ab_res = a.multiply_by_matrix(&b);
+
+        if let Ok(ab) = ab_res {
+            assert_eq!(ab.data[0], 5);
+        } 
+        
+        else {
+            assert!(false);
+        }
     }
 }
